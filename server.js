@@ -19,7 +19,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended:false}))
 /* ------------Routes------------ */
 app.use("/api",productsRoutes,cartsRoutes)
-/* --SERVER-- */
+/* ------------SERVER------------ */
 
 const server = app.listen(PORT, () => {
     console.log(`Servidor http escuchando en el puerto ${server.address().port}`);
