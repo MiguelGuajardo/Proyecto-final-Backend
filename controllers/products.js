@@ -1,65 +1,84 @@
-const products = require("../productos.json")
 const admin = true;
 const fs = require("fs")
 const path = require("path")
-const express = require("express")
-const exphbs = require("express-handlebars");
-const app = express()
-/* Config */
-app.set("views", path.join(__dirname, "views"))
-app.engine(".hbs", exphbs.engine({
-    extname:".hbs",
-    defaultLayout: "main.hbs",
-    layoutsDir: path.join(app.get("views") + "layouts"),
-    partialsDir: path.join(app.get("views") + "partials"),
-}))
-app.set("view engine",".hbs")
+
+class Product {
+    static file = path.join(__dirname, "productos.json")
+    constructor(name,description,code,thumbnail,price,stock) {
+        this.name = name;
+        this.description = description;
+        this.code = code;
+        this.thumbnail = thumbnail;
+        this.price = price;
+        this.stock = stock;
+        this.timestamp;
+        this.id;
+      };
+    static async getAll (){
+        try {
+            if(fs.existsSync(Product.file)){
+                const json = await fs.promises.readFile(Product.file, "utf-8");
+        const data = JSON.parse(json);
+        return data
+            }else{
+                await fs.promises.writeFile(Product.file, "[]", 'utf-8');
+        console.log({ Msg: "Created file" });
+        return []
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+    async save(){
+        try {
+            const data = await Product.getAll()
+            this.id = data.length + 1
+            this.timestamp = new Date().toLocaleString()
+            data.push(this)
+            await fs.promises.writeFile(Product.file,JSON.stringify(data,null,2), "utf-8")
+        } catch (error) {
+            console.log(error)
+        }
+    }
+}
 
 module.exports = {
-    getProducts: (req,res)=>{
-        const productsResult  = JSON.parse(fs.readFileSync("productos.json"))
+    getProducts: async (req,res)=>{
+        const productsResult  = await Product.getAll()
+        console.log(productsResult)
         if(productsResult.length === 0){
             res.json("No hay productos cargados")
         }else{
             res.json(productsResult)
         }
    },
-   addProduct: (req,res)=>{
+   
+   addProduct: async (req,res)=>{
     if(admin === true){
         const {name,description,code,thumbnail,price,stock} = req.body
-        const productsResult  = JSON.parse(fs.readFileSync("productos.json"))
         if(!name||!description||!code||!thumbnail||!price||!stock){
             res.json("Producto no agregado")
             }else{
-                let nuevoProducto = {
-                    id: products.length + 1,
-                    timestamp: new Date().toLocaleString(),
-                    name: name,
-                    description: description,
-                    code : code,
-                    thumbnail: thumbnail,
-                    price: price,
-                    stock: stock
-                }
-                productsResult.push(nuevoProducto)
-            fs.writeFileSync("productos.json", JSON.stringify(productsResult,null,2))
+                const nuevoProducto = new Product(name,description,code,thumbnail,price,stock)
+                await nuevoProducto.save()
        res.json("recived")
             }
             
 }else{"Usted no esta autorizado"}},
-    getOneProduct: (req,res)=>{
+    getOneProduct: async (req,res)=>{
         const {id} = req.params
-        const oneProduct = products.find(element => element.id === Number(id))
+        const productsResult  = await Product.getAll()
+        const oneProduct = productsResult.find(element => element.id === Number(id))
         if(!oneProduct){
             res.json("Producto inexistente")
         }
         res.json(oneProduct)
     },
-    updateProduct: (req,res)=>{
+    updateProduct: async (req,res)=>{
         if(admin === true){
             const {id} = req.params
             const {name,description,code,thumbnail,price,stock} = req.body
-            const productsResult  = JSON.parse(fs.readFileSync("productos.json"))
+            const productsResult  = await Product.getAll()
             const oneProduct = productsResult.find(element=> element.id === Number(id))
             if(!oneProduct){
                 res.json("Producto inexistente")
@@ -75,22 +94,22 @@ module.exports = {
                         oneProduct.stock = stock
                     }
                 }
-                fs.writeFileSync("productos.json", JSON.stringify(productsResult,null,2))
+                fs.writeFileSync(Product.file, JSON.stringify(productsResult,null,2))
                 res.json("Updated")
         }else{
             res.json("Usted no esta autorizado")
             }
     },
-    deleteProduct: (req,res)=>{
+    deleteProduct: async (req,res)=>{
         if(admin === true){
             const {id} = req.params
-            const productsResult  = JSON.parse(fs.readFileSync("productos.json"))
+            const productsResult  = await Product.getAll()
             const oneProduct = productsResult.find(element=> element.id === Number(id))
             if(!oneProduct){
                 res.json("Producto inexistente")
             }else{
                 const resultado = productsResult.filter(element => element != oneProduct);
-                fs.writeFileSync("productos.json", JSON.stringify(resultado,null,2))
+                fs.writeFileSync(Product.file, JSON.stringify(resultado,null,2))
                 res.json("Deleted")
             }
         }else{

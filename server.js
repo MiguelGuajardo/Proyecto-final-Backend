@@ -6,14 +6,6 @@ const fs = require("fs")
 const productsRoutes = require("./routes/products")
 const cartsRoutes = require("./routes/carts")
 
-/* ------------Creación de Archivos------------ */
-if(!fs.existsSync("productos.json")){
-    fs.writeFileSync("productos.json", JSON.stringify([]))
-}
-if(!fs.existsSync("carrito.json")){
-    fs.writeFileSync("carrito.json", JSON.stringify([]))
-}
-
 /* ------------Middlewares------------ */
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended:false}))
